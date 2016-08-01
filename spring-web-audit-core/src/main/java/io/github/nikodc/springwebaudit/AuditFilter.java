@@ -26,10 +26,16 @@ public class AuditFilter implements Filter {
 
     private static final String BODY_ERROR_INDICATOR = "$ERROR";
 
+    private final AuditInfoListener auditInfoListener;
+
     private AtomicLong requestIdNumerator = new AtomicLong(1);
 
     @SuppressWarnings("unused")
     private FilterConfig filterConfig;
+
+    public AuditFilter(AuditInfoListener auditInfoListener) {
+        this.auditInfoListener = auditInfoListener;
+    }
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -95,9 +101,7 @@ public class AuditFilter implements Filter {
             log.info("Final response detected, publishing...");
 
             request.setAttribute(AUDIT_INFO_STATUS_ATTRIBUTE, AUDIT_INFO_STATUS_PUBLISHING);
-            log.info("auditInfo: \n{}", new ObjectMapper()
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(auditInfo));
+            auditInfoListener.onNewAuditInfo(auditInfo);
             request.setAttribute(AUDIT_INFO_STATUS_ATTRIBUTE, AUDIT_INFO_STATUS_PUBLISHED);
 
             log.info("Done");
