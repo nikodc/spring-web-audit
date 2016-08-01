@@ -24,6 +24,17 @@ public class AuditHandlerInterceptor extends HandlerInterceptorAdapter {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
 
+        log.info("Checking @AuditableMethod annotation present...");
+
+        HandlerMethod handlerMethod = (HandlerMethod) handler;
+        if (handlerMethod.getMethodAnnotation(AuditableMethod.class) == null) {
+
+            log.info("@AuditableMethod annotation not present, returning");
+            return true;
+        }
+
+        log.info("@AuditableMethod annotation present");
+
         log.info("Retrieving audit info attribute...");
 
         AuditInfo auditInfo = (AuditInfo) request.getAttribute(AUDIT_INFO_ATTRIBUTE);
@@ -41,7 +52,6 @@ public class AuditHandlerInterceptor extends HandlerInterceptorAdapter {
 
         log.info("Updating audit info attribute...");
 
-        HandlerMethod handlerMethod = (HandlerMethod) handler;
         HandlerMethodInfo handlerMethodInfo = new HandlerMethodInfo();
         handlerMethodInfo.setType(handlerMethod.getMethod().getDeclaringClass().getName());
         if (!handlerMethod.isVoid()) {
@@ -75,37 +85,50 @@ public class AuditHandlerInterceptor extends HandlerInterceptorAdapter {
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex)
             throws Exception {
 
-        log.info("Retrieving audit info attribute...");
+        log.info("Checking @AuditableMethod annotation present...");
 
-        AuditInfo auditInfo = (AuditInfo) request.getAttribute(AUDIT_INFO_ATTRIBUTE);
-        if (auditInfo == null) {
-            log.error("Cannot proceed, audit info not found");
-            throw new RuntimeException("Audit info not found");
+        HandlerMethod handlerMethod = (HandlerMethod) handler;
+        if (handlerMethod.getMethodAnnotation(AuditableMethod.class) == null) {
+
+            log.info("@AuditableMethod annotation not present");
+
+        } else {
+
+            log.info("@AuditableMethod annotation present");
+
+            log.info("Retrieving audit info attribute...");
+
+            AuditInfo auditInfo = (AuditInfo) request.getAttribute(AUDIT_INFO_ATTRIBUTE);
+            if (auditInfo == null) {
+                log.error("Cannot proceed, audit info not found");
+                throw new RuntimeException("Audit info not found");
+            }
+
+            if (!AUDIT_INFO_STATUS_PENDING.equals(request.getAttribute(AUDIT_INFO_STATUS_ATTRIBUTE))) {
+                log.error("Cannot proceed, audit info already published");
+                throw new RuntimeException("Audit info already published");
+            }
+
+            log.info("Done");
+
+            HandlerMethodInfo handlerMethodInfo = auditInfo.getHandlerMethodInfo();
+            if (ex != null) {
+
+                log.info("Exception found, updating audit info attribute...");
+
+                HandlerExceptionInfo handlerExceptionInfo = new HandlerExceptionInfo();
+                handlerExceptionInfo.setType(ex.getClass().getName());
+                handlerExceptionInfo.setMessage(ex.getMessage());
+                StringWriter sw = new StringWriter();
+                ex.printStackTrace(new PrintWriter(sw));
+                handlerExceptionInfo.setStackTrace(sw.toString());
+                handlerMethodInfo.setExceptionInfo(handlerExceptionInfo);
+            }
+            auditInfo.setHandlerMethodInfo(handlerMethodInfo);
+
+            log.info("Done");
+
         }
-
-        if (!AUDIT_INFO_STATUS_PENDING.equals(request.getAttribute(AUDIT_INFO_STATUS_ATTRIBUTE))) {
-            log.error("Cannot proceed, audit info already published");
-            throw new RuntimeException("Audit info already published");
-        }
-
-        log.info("Done");
-
-        HandlerMethodInfo handlerMethodInfo = auditInfo.getHandlerMethodInfo();
-        if (ex != null) {
-
-            log.info("Exception found, updating audit info attribute...");
-
-            HandlerExceptionInfo handlerExceptionInfo = new HandlerExceptionInfo();
-            handlerExceptionInfo.setType(ex.getClass().getName());
-            handlerExceptionInfo.setMessage(ex.getMessage());
-            StringWriter sw = new StringWriter();
-            ex.printStackTrace(new PrintWriter(sw));
-            handlerExceptionInfo.setStackTrace(sw.toString());
-            handlerMethodInfo.setExceptionInfo(handlerExceptionInfo);
-        }
-        auditInfo.setHandlerMethodInfo(handlerMethodInfo);
-
-        log.info("Done");
 
         log.info("Continuing with handler chain...");
 
