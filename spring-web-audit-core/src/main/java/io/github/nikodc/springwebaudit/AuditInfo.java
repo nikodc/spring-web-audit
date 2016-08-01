@@ -6,7 +6,7 @@ public class AuditInfo {
 
     private RequestInfo requestInfo;
 
-    private HandlerInfo handlerInfo;
+    private HandlerMethodInfo handlerMethodInfo;
 
     private ResponseInfo responseInfo;
 
@@ -22,16 +22,16 @@ public class AuditInfo {
         return requestInfo;
     }
 
-    public HandlerInfo getHandlerInfo() {
-        return handlerInfo;
-    }
-
-    public void setHandlerInfo(HandlerInfo handlerInfo) {
-        this.handlerInfo = handlerInfo;
-    }
-
     public void setRequestInfo(RequestInfo requestInfo) {
         this.requestInfo = requestInfo;
+    }
+
+    public HandlerMethodInfo getHandlerMethodInfo() {
+        return handlerMethodInfo;
+    }
+
+    public void setHandlerMethodInfo(HandlerMethodInfo handlerMethodInfo) {
+        this.handlerMethodInfo = handlerMethodInfo;
     }
 
     public ResponseInfo getResponseInfo() {
@@ -47,9 +47,8 @@ public class AuditInfo {
         return "AuditInfo{" +
                 "requestId=" + requestId +
                 ", requestInfo=" + requestInfo +
-                ", handlerInfo=" + handlerInfo +
+                ", handlerMethodInfo=" + handlerMethodInfo +
                 ", responseInfo=" + responseInfo +
                 '}';
     }
-
 }

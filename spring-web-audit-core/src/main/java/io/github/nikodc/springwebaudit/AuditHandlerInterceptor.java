@@ -43,18 +43,29 @@ public class AuditHandlerInterceptor extends HandlerInterceptorAdapter {
         log.info("Updating audit info attribute...");
 
         HandlerMethod handlerMethod = (HandlerMethod) handler;
-        HandlerInfo handlerInfo = new HandlerInfo();
-        handlerInfo.setClassName(handlerMethod.getMethod().getDeclaringClass().getName());
-        handlerInfo.setMethodName(handlerMethod.getMethod().getName());
-        handlerInfo.setMethodSignature(handlerMethod.getMethod().toGenericString());
+        HandlerMethodInfo handlerMethodInfo = new HandlerMethodInfo();
+        handlerMethodInfo.setType(handlerMethod.getMethod().getDeclaringClass().getName());
+        if (!handlerMethod.isVoid()) {
+            handlerMethodInfo.setReturnType(handlerMethod.getReturnType().getParameterType().getName());
+        }
+        handlerMethodInfo.setMethod(handlerMethod.getMethod().getName());
+        handlerMethodInfo.setSignature(handlerMethod.getMethod().toGenericString());
         if (ex != null) {
-            handlerInfo.setExceptionClassName(ex.getClass().getName());
-            handlerInfo.setExceptionMessage(ex.getMessage());
+            HandlerExceptionInfo handlerExceptionInfo = new HandlerExceptionInfo();
+            handlerExceptionInfo.setType(ex.getClass().getName());
+            handlerExceptionInfo.setMessage(ex.getMessage());
             StringWriter sw = new StringWriter();
             ex.printStackTrace(new PrintWriter(sw));
-            handlerInfo.setExceptionStackTrace(sw.toString());
+            handlerExceptionInfo.setStackTrace(sw.toString());
+            handlerMethodInfo.setExceptionInfo(handlerExceptionInfo);
         }
-        auditInfo.setHandlerInfo(handlerInfo);
+        for (MethodParameter methodParameter : handlerMethod.getMethodParameters()) {
+            HandlerParameterInfo handlerParameterInfo = new HandlerParameterInfo();
+            handlerParameterInfo.setName(methodParameter.getParameterName());
+            handlerParameterInfo.setType(methodParameter.getParameterType().getName());
+            handlerMethodInfo.getParameters().add(handlerParameterInfo);
+        }
+        auditInfo.setHandlerMethodInfo(handlerMethodInfo);
 
         log.info("Done");
 
@@ -64,4 +75,5 @@ public class AuditHandlerInterceptor extends HandlerInterceptorAdapter {
 
         log.info("Done");
     }
+
 }
